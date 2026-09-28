@@ -204,66 +204,72 @@ and 0.828 with no overlap, so 0.73 sits safely in the middle of it.
 
 ## Run Log — Before
 
-<!-- Your five criteria, three runs each. `python run_eval.py --label before`
-     runs the questions, puts the OUT_OF_SCOPE ones through the gate, and
-     writes it all into results/ for you. Targets come from criteria.md; the
-     verdict column is your call.
-
-     Criterion 3 is measured in one deterministic pass rather than three, so
-     the same number goes in all three run columns. That's correct, not lazy.
-
-     Milestone 1. -->
+Produced by `run_eval.py::main` (file: `results/run_2026-09-28_0037_before.md`).
+Retrieval is `store.py::search` over chunks from `chunker.py::split_documents`.
+Corpus `advice_threads`, top-k 5, cutoff 0.73, 3 runs per question, cache off.
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunks contain the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Every chunk ≥100 chars, first line THREAD: | 0 failing | 0 failing | 0 failing | 0 failing | MET |
+| 5. Source: line names the file with the expects phrase | 5 of 5 | 3/5 | 3/5 | 3/5 | MISSED |
 
-<!-- Underneath, paste the REAL output for each criterion from one of your
-     runs — the actual text your system produced, not a description of it.
-     Name the file and function that produced it. -->
+Criteria 1, 3 and 4 are deterministic (retrieval, the gate and the chunker do
+not change between runs), so their three columns are identical. Only criteria 2
+and 5 depend on the generated text.
+
+**Real output, criterion 1** (`run_eval.py`, question 2, run 1):
+
+```
+Best distance: 0.6295 (passed the gate)
+Sources retrieved: thread_commuting.txt, thread_late_work.txt, thread_laundry_timing.txt, thread_printing.txt, thread_winter_advice.txt
+```
+
+**Real output, criterion 2 and 5** (`generate.py`, question 4, run 2 and run 1):
+
+```
+The student found that their verbal yes "didn't survive a staff change" (thread_transfer_credits.txt).
+```
+```
+The verbal yes did not survive a staff change.
+
+Source: `thread_transfer_credits.txt`
+```
+
+**Real output, criterion 3** (`run_eval.py::check_out_of_scope`):
+
+```
+| What is the capital of Mongolia? | 0.948 | refused |
+| How do I change the oil in a diesel engine? | 0.930 | refused |
+| Who won the 1994 World Cup? | 0.952 | refused |
+| What is the recommended dosage of ibuprofen for a headache? | 0.828 | refused |
+| How do I write a for loop in Rust? | 0.871 | refused |
+```
+
+**Real output, criterion 4** (`check_chunks.py`, using chunks from `chunker.py::split_documents`):
+
+```
+<paste the exact line it printed, for example: 23 chunks, 0 failing criterion 4>
+```
 
 ## Verdicts
 
-<!-- MET or MISSED for each of the five, against the target you wrote last
-     unit — not a new one. Plus a sentence on how you decided. That sentence
-     matters most where it was close.
+1. **Criterion 1: MET.** The right thread was in the top 5 for all five questions in all three runs (5/5, target 4/5). Retrieval is deterministic, so three runs add no information here.
+2. **Criterion 2: MET.** All 15 answers named a source file, in varying formats. Gate refusals are excluded, as my reason in `criteria.md` says.
+3. **Criterion 3: MET.** The gate refused 5 of 5 out-of-scope questions (best distances 0.828 to 0.952 against a 0.73 cutoff).
+4. **Criterion 4: MET.** `check_chunks.py` reports 0 failing.
+5. **Criterion 5: MISSED.** Read plainly, the criterion requires the file on the `Source:` line. Only 3 of 5 answers per run had one (9 of 15 overall). I did not count inline citations like `(thread_group_project.txt)`, because the criterion names a `Source:` line. Every answer named the correct file (15 of 15), so what failed was citation format, not citation accuracy.
 
-     If your target said 4 of 5 and your runs came out 4, 3, 4, that's a MISS.
-     The target has to hold, not show up occasionally.
-
-     Milestone 2. -->
-
-| # | Criterion | Verdict | How I decided |
-|---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
+Two of these MET verdicts are close to free. Criterion 1 checks the top 5 of only 23 chunks, and criterion 4 checks structure, not whether a chunk can answer anything. I say more in "What I'd Do Differently."
 
 ## Diagnoses
 
-<!-- For each miss: which stage caused it, and how. The stage alone isn't
-     enough — you need the mechanism.
+**Criterion 5, stage: generation.** Question 5 ("What will most instructors adjust…") got its correct citation in italic parentheses in all three runs, and the other questions switched between `Source:` lines and inline citations from run to run. The retrieved chunks were right in every case, so retrieval and chunking are not the cause. The grounding instruction tells the model to name the file but does not fix the format of the citation, and the model chooses a different format from run to run. The criterion also assumed a format that nothing enforces.
 
-     Not a diagnosis: "Question 3 didn't work."
-     A diagnosis:     "Question 3 asks about laundry costs. The answer is in
-                       one sentence that got split across two chunks, so
-                       neither chunk on its own contains it."
+No other criterion was missed.
 
-     The five stages: loading → chunking → embedding → retrieval → generation.
-
-     Look for a pattern. If three misses all ask about numbers, that's one
-     problem, not three.
-
-     Missed nothing? Say so, then say honestly whether your targets were set
-     low, and which one you'd tighten and to what.
-
-     Milestone 3. -->
 
 ## The Improvement
 
