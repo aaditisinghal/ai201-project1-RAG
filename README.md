@@ -13,7 +13,7 @@
 >
 > Delete these instruction blocks as you replace them. The `<!-- -->` comments
 > are notes to you and don't show up when the page renders — you can leave them
-> or remove them.
+> or remove them
 
 ---
 
