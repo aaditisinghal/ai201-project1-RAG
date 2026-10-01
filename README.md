@@ -325,17 +325,43 @@ between the before and after runs (e.g. 0.1829, 0.6295, 0.2649, 0.5144,
 
 ## What's Still Broken
 
-<!-- For each criterion still missed after your fix: what you'd do about it,
-     and why you stopped where you did.
-
-     "I ran out of time" is fine if it's true. Pretending nothing is left is
-     not.
-
-     Milestone 5. -->
+- **Citation format fixed, not citation accuracy.** The improvement made the
+  model format its source consistently, but nothing checks that the named
+  file is actually where the fact came from. If the model ever misattributes
+  a fact to the wrong chunk, the Source: line would still look correct. I
+  would add a check that compares the cited file against which chunk the
+  answer's key phrase actually appears in.
+- **Multi-source answers aren't handled.** The instruction assumes one
+  source per answer. If a future question genuinely needs two documents, the
+  format has nowhere to put a second file.
+- **The December question only clears the gate because I moved the cutoff to
+  0.73.** Its own thread, `thread_winter_advice.txt`, ranked second in
+  retrieval (0.660) behind an unrelated printing thread (0.630). Whole-thread
+  chunking mixes topics in multi-reply threads, and I did not test per-reply
+  chunking as an alternative, because this unit allows only one change.
+- **The gate is only tested against far-off-topic questions** (best distances
+  0.828–0.952). Near-miss questions, like ones about tuition or campus
+  services not covered in this corpus, are untested, so I don't know how the
+  cutoff behaves closer to the boundary.
+- I stopped here because the unit's rule is one change, measured properly,
+  and I wanted to measure this one cleanly rather than confound it with a
+  second change.
 
 ## What I'd Do Differently
 
-<!-- Knowing what you know now — which of your five criteria would you write
-     differently, and why?
+- **Criterion 5** assumed a citation format ("the Source: line") without
+  first confirming the system produced one consistently. I would write it as
+  "the answer text names the file containing the expects phrase," and treat
+  citation *format* as a separate criterion, since format and accuracy turned
+  out to be two different failure modes.
+- **Criterion 1** is close to a given: the correct thread only has to appear
+  anywhere in the top 5 of 23 total chunks (22% of the corpus), and it did in
+  all three before-runs with no improvement needed. I'd tighten it to
+  "the correct thread is ranked first or second," which the December
+  question (ranked second behind an unrelated thread) would actually test.
+- **Criterion 4** checks chunk structure (length, a THREAD: title) but not
+  whether a chunk can answer a question on its own. I would add a criterion
+  like "for each test question, the chunk holding the answer contains it
+  within a single reply," which the diluted multi-topic chunks (like the bike
+  thread) might fail even though they pass the current structural check.
 
-     Milestone 5. -->
