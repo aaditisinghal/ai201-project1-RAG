@@ -273,34 +273,55 @@ No other criterion was missed.
 
 ## The Improvement
 
-**What I changed:**
+**Change:** I tightened `GROUNDING_INSTRUCTION` and the final line of
+`build_prompt()` in `generate.py` to require the answer to end with exactly
+one line reading `Source: <filename>`, with no other citation anywhere in the
+answer. Previously the instruction only said "name the document," with no
+required format.
 
-**Why I picked it:**
+**Why this change and nothing else:** criterion 5 was MISSED (3/5 in every
+"before" run) because the model cited the correct file in inconsistent
+formats — a `Source:` line in some runs, inline parentheses or italics in
+others, and no citation line at all for question 5 in all three runs. The
+diagnosis pointed at the generation stage, specifically the prompt, since
+retrieval returned the correct chunk every time in both runs. This is the only
+change I made. Chunking, retrieval, the 0.73 cutoff, questions.py and
+criteria.md are untouched.
 
-<!-- Connect it to a specific diagnosis above in one sentence. If you can't,
-     you picked a fix because it sounded impressive. -->
+**Predicted risk (asked Claude "I'm going to tighten the grounding prompt to
+require a Source: line to fix inconsistent citations — tell me why that might
+not work"):** <paste what it actually said, or summarize in one sentence:
+e.g. "it warned the model might still vary wording around the Source: line,
+or might add a Source: line even to a refusal where there's nothing to cite."
+Note which of these did or didn't happen below.>
 
 ### Run Log — After
 
-<!-- Same format, same five criteria, three runs each.
-     `python run_eval.py --label after` -->
-
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunks contain the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Every chunk ≥100 chars, first line THREAD: | 0 failing | 0 failing | 0 failing | 0 failing | MET |
+| 5. Source: line names the file with the expects phrase | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
 
-**Did it help?**
+**Real output** (`generate.py::answer_from_chunks`, question 2, run 1 of the
+after log, `results/run_2026-10-01_1137_after.md`):
 
-<!-- Say plainly whether it did, and how you know. If it made things worse,
-     say that — a change that backfired, honestly reported, earns full credit
-     and is more interesting than one that worked. What matters is that you can
-     tell.
+```
+It gets dark by 4:30 in December.
 
-     Milestone 4. -->
+Source: thread_winter_advice.txt
+```
+
+**Did it help?** Yes. Criterion 5 went from 3/5, 3/5, 3/5 (before) to 5/5,
+5/5, 5/5 (after) across all three runs. Every one of the 15 answers in the
+after run ends with an exact `Source: <filename>` line naming the correct
+file, compared to 9 of 15 before. No other criterion moved: criteria 1, 3 and
+4 are deterministic (unaffected by a prompt-only change), and criterion 2 was
+already MET in both runs. Distances across all five questions are identical
+between the before and after runs (e.g. 0.1829, 0.6295, 0.2649, 0.5144,
+0.3704), confirming retrieval was not affected.
 
 ## What's Still Broken
 
